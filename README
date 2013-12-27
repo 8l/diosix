@@ -1,0 +1,45 @@
+README draft 2013-12-27-1045 GMT ... temporary document (cw)
+
+Welcome to Diosix
+-----------------
+
+Once upon a time, I wrote a natty little fully fledged SMP microkernel
+with a minimal userspace stack that included a virtual filesystem and
+PCI manager, plus keyboard, video, ATA and network drivers. It worked,
+albeit on 32-bit legacy i486-compatible systems and a 32-bit
+ARMv4-compatible board. Yes, it worked, but it wasn't ready for 64-bit
+nor was it optimised: I wanted a fast, secure 64-bit hot-lockless
+microkernel that could be regression tested and tuned depending on
+the userland software above it.
+
+So now's the time to go back to the drawing board and make a proper
+reliable operating system backed by a rewritten microkernel that can
+be fully tested and is safe across 64-bit and 32-bit systems, whether
+they are x86 or ARM. Hopefully it won't be a complete rewrite from
+scratch, as I'll be bringing good code from the old project across,
+but the architecture will change.
+
+Eventually, the project will evolve into a distributed system but to
+what end I've not decided. Maybe someone can suggest an application :-)
+
+So that's why there is a lack of source code right now: I'm writing
+it all again, but better, cleaner and with unit testing in mind.
+
+Why share it?
+-------------
+
+I've made this available under an open-source licence for other people
+to do what the will with it and potentially contribute to it.
+
+I don't intend to write an entire OS from scratch - ideally, I want to
+work on the microkernel and develop the distributed system processes,
+and use existing drivers, libraries and applications from other
+open-source projects on top.
+
+The main goal is to have fun and learn something new.
+
+Contact
+-------
+
+Email: chris@diodesign.co.uk
+Web: diosix.org
