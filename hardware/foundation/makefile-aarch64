@@ -1,0 +1,65 @@
+# ------------------------------------------------------------
+
+# diosix - microkernel makefile
+# Maintainer(s): Chris Williams (diodesign)
+ 
+# For ARM AArch64 Foundation compatible machines 
+
+# Expects the build system to define the following:
+# BUILD_ARCH, BUILD_HARDWARE, BUILD_TYPE, KERNEL_RELEASE_MAJOR,
+# KERNEL_RELEASE_MINOR, KERNEL_CODENAME, KERNEL_API_REVISION
+# BUILD_CC, BUILD_LINKER, BUILD_OBJDUMP, BUILD_STRIP
+# BUILD_READELF, BUILD_ASM, BUILD_TIMESTAMP, BUILD_REVISION
+
+# ------------------------------------------------------------
+
+# define the build version
+VERSION		= -DKERNEL_IDENTIFIER="\"diosix-$(KERNEL_CODENAME) ($(BUILD_TIMESTAMP) $(BUILD_REVISION)) " \
+		  "$(BUILD_ARCH)_$(BUILD_HARDWARE) $(BUILD_TYPE)\"" \
+		  -DKERNEL_RELEASE_MAJOR=$(KERNEL_RELEASE_MAJOR) -DKERNEL_RELEASE_MINOR=$(KERNEL_RELEASE_MINOR) \
+		  -DKERNEL_API_REVISION=$(KERNEL_API_REVISION)
+
+# prettify the output
+Q=@
+WRITE 		= $(Q)echo 
+
+.SUFFIXES: .s .c
+
+# define our clang, linker and nasm flags
+CC_FLAGS	= -g -O2 -Iinclude -finline -march=armv8-a
+LINK_FLAGS	= -T$(HARDWAREDIR)/linker-aarch64.ld
+
+# get our build executables all lined up
+CC		= $(Q)$(BUILD_CC) $(CC_FLAGS)
+LINK 		= $(Q)$(BUILD_LINKER) $(LINK_FLAGS)
+ASM		= $(Q)$(BUILD_CC) $(ASM_FLAGS)
+
+# define paths to stuff
+MAKEFILE	= makefile-aarch64
+OBJSDIR		= ../../build/$(BUILD_ARCH)_$(BUILD_HARDWARE)/kernel
+HARDWAREDIR	= ../../hardware/$(BUILD_HARDWARE)
+
+# the actual components in the microkernel
+OBJS		= $(OBJSDIR)/start.o
+
+# targets
+all: kernel
+
+# standard cmd lines
+BUILD.s 	= $(ASM) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
+BUILD.c 	= $(CC) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
+
+# per-source rules
+$(OBJSDIR)/start.o:	$(HARDWAREDIR)/start.s
+			$(WRITE) '==> ASSEMBLE: $<'
+			$(BUILD.s)
+
+
+# explicit rules
+
+.EXPORT_ALL_VARIABLES: ;
+
+# link the kernel
+kernel: $(OBJS) $(LDSCRIPT)
+	$(WRITE) '==> LINK: $<'
+	$(LINK) $(LINK_FLAGS) $(OBJS) -o $(OBJSDIR)/$@

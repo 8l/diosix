@@ -1,0 +1,10 @@
+<!-- hand built XML file for managing the microkernel version numbering 
+     Chris Williams <http://diosix.org> -->
+
+<kernel>
+ <major>0</major>
+ <minor>1</minor>
+ <codename>Kearny</codename>
+ <api>1</api>
+</kernel>
+

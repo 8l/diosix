@@ -1,0 +1,17 @@
+# build text descriptions for en_US / en_UK (cwilliams, diosix.org, Feb 2014)
+
+syntax = syntax: build.pl --arch <arch> --hardware <hardware> --component <component>
+banner = build environment
+no hardware selected = No hardware platform to target.
+hardware not recognized = Hardware plaftorm %%1 not recognized.
+no component selected = No component selected.
+component not recognized = Component %%1 not recognized.
+using default CPU = No CPU architecture specified, using hardware platform's default CPU.
+CPU not recognized = CPU architecture %%1 not recognized.
+exiting = Bailing out.
+building component for CPU and hardware = Building the %%1 for %%2 %%3.
+building component for default CPU and hardware = Building the %%1 for default architecture for %%2.
+build config file not found = Can't find build configuration file %%1.
+build config file mismatch = Build configuration file %%1 does not define hardware platform %%2.
+building for = Building the %%1 for %%2 systems powered by %%3 processors.
+

@@ -1,0 +1,30 @@
+<!-- hand built XML file for building x86-64 PC targets 
+     Chris Williams <http://diosix.org> -->
+
+
+<hardware name="pc">
+        <description>x86 PC</description>
+        <default>x86-64</default>
+
+        <architecture name="x86-64">
+                <description>64-bit Intel (x64, x86_64, amd64)</description>
+                <toolchain>
+                        <cc>gcc</cc>
+                        <linker>ld</linker>
+                        <assembler>nasm</assembler>
+                </toolchain>
+
+                <component name="kernel">
+                        <description>diosix microkernel</description>
+                        <features>64-bit SMP MMU</features>
+                        <paths>
+                                <source>hardware/pc</source>
+                                <build>build/pc/x86-64/kernel</build>
+                        </paths>
+                        <scripts>
+                                <makefile>makefile-x86-64</makefile>
+                        </scripts>
+                </component>
+        </architecture>
+</hardware>
+
