@@ -216,13 +216,19 @@ $ENV{'DKERNEL_API_REVISION'} = $kernel->{api};
 # ensure we have a build directory
 my $builder_dir = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{build};
 mkpath($builder_dir);
+$ENV{'BUILD_OBJS_DIR'} = $builder_dir;
 
 # -------------------------------------------------------------------------
 # call into the makefile
 my $hardware_src_dir = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{source};
-my $makefile = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{scripts}->{makefile};
+$ENV{'BUILD_HARDWARE_SRC_DIR'} = $hardware_src_dir;
 
-system("make -f ".$hardware_src_dir."/".$makefile);
+my $makefile = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{scripts}->{makefile};
+my $linkerfile = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{scripts}->{linkerfile};
+$ENV{'BUILD_MAKEFILE'} = $makefile;
+$ENV{'BUILD_LINKERFILE'} = $linkerfile;
+
+system("make -f ".$makefile);
 
 # -------------------------------------------------------------------------
 exit 0;

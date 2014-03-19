@@ -10,7 +10,8 @@
 # KERNEL_RELEASE_MINOR, KERNEL_CODENAME, KERNEL_API_REVISION
 # BUILD_CC, BUILD_LINKER, BUILD_OBJDUMP, BUILD_STRIP
 # BUILD_READELF, BUILD_ASM, BUILD_TIMESTAMP, BUILD_REVISION
-
+# BUILD_OBJS_DIR, BUILD_HARDWARE_SRC_DIR, BUILD_MAKEFILE,
+# BUILD_LINKERFILE
 # ------------------------------------------------------------
 
 # define the build version
@@ -26,11 +27,11 @@ WRITE 		= $(Q)echo
 .SUFFIXES: .s .c
 
 # define our clang, linker and nasm flags
-CC_FLAGS	= -target x86_64-pc-elf \
+CC_FLAGS	= -m64 \
 		  -ffreestanding -mcmodel=large \
 		  -mno-red-zone	-mno-mmx -mno-sse \
 		  -mno-sse2 -mno-sse3 -mno-3dnow
-LINK_FLAGS	= -nodefaultlibs -Tlinker-x86-64.ld \
+LINK_FLAGS	= -nodefaultlibs -T$(BUILD_LINKERFILE) \
 		  -z max-page-size=0x1000
 ASM_FLAGS	= -felf64
 
@@ -39,35 +40,30 @@ CC		= $(Q)$(BUILD_CC) $(CC_FLAGS)
 LINK 		= $(Q)$(BUILD_LINKER) $(LINK_FLAGS)
 ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 
-# define paths to stuff
-MAKEFILE	= makefile-x86-64
-OBJSDIR		= build/$(BUILD_ARCH)-$(BUILD_HARDWARE)/kernel
-HARDWAREDIR	= hardware/$(BUILD_HARDWARE)
-
 # the actual components in the microkernel
-OBJS		= $(OBJSDIR)/start.o $(OBJSDIR)/boot.o
+OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/boot.o
 
 # targets
 all: kernel
 
 # standard cmd lines
-BUILD.s		= $(ASM) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
+BUILD.s		= $(ASM) $< -o $@
 BUILD.c		= $(CC) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
 
 # per-source rules
-$(OBJSDIR)/start.o:	$(HARDWAREDIR)/start.s
-			$(WRITE) '==> ASSEMBLE: $<'
-			$(BUILD.s)
+$(BUILD_OBJS_DIR)/start.o:	$(BUILD_HARDWARE_SRC_DIR)/start.s
+				$(WRITE) '==> ASSEMBLE: $<'
+				$(BUILD.s)
 
-$(OBJSDIR)/boot.o:	$(HARDWAREDIR)/boot.c
-			$(WRITE) '==> COMPILE: $<'
-			$(BUILD.c)
+$(BUILD_OBJS_DIR)/boot.o:	$(BUILD_HARDWARE_SRC_DIR)/boot.c
+				$(WRITE) '==> COMPILE: $<'
+				$(BUILD.c)
 
 # explicit rules
 
 .EXPORT_ALL_VARIABLES: ;
 
 # link the kernel
-kernel: $(OBJS) $(LDSCRIPT)
+kernel: $(OBJS) $(BUILD_LINKERFILE) $(BUILD_MAKEFILE)
 	$(WRITE) '==> LINK: $<'
-	$(LINK) $(LINK_FLAGS) $(OBJS) -o $(OBJSDIR)/$@
+	$(LINK) $(LINK_FLAGS) $(OBJS) -o $(BUILD_OBJS_DIR)/$@

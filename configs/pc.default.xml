@@ -7,7 +7,7 @@
         <default>x86-64</default>
 
         <architecture name="x86-64">
-                <description>64-bit Intel (x64, x86_64, amd64)</description>
+                <description>64-bit x86 Intel (x64, x86_64, amd64)</description>
                 <toolchain>
                         <cc>gcc</cc>
                         <linker>ld</linker>
@@ -22,7 +22,8 @@
                                 <build>build/pc/x86-64/kernel</build>
                         </paths>
                         <scripts>
-                                <makefile>makefile-x86-64</makefile>
+                                <makefile>hardware/pc/makefile-x86-64</makefile>
+                                <linkerfile>hardware/pc/linker-x86-64.ld</linkerfile>
                         </scripts>
                 </component>
         </architecture>
