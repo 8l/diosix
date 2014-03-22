@@ -11,7 +11,7 @@
 # BUILD_CC, BUILD_LINKER, BUILD_OBJDUMP, BUILD_STRIP
 # BUILD_READELF, BUILD_ASM, BUILD_TIMESTAMP, BUILD_REVISION
 # BUILD_OBJS_DIR, BUILD_HARDWARE_SRC_DIR, BUILD_MAKEFILE,
-# BUILD_LINKERFILE
+# BUILD_LINKERFILE, RELEASE_DIR
 # ------------------------------------------------------------
 
 # define the build version
@@ -44,7 +44,7 @@ ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/boot.o
 
 # targets
-all: kernel
+all: kernel mkiso
 
 # standard cmd lines
 BUILD.s		= $(ASM) $< -o $@
@@ -67,3 +67,13 @@ $(BUILD_OBJS_DIR)/boot.o:	$(BUILD_HARDWARE_SRC_DIR)/boot.c
 kernel: $(OBJS) $(BUILD_LINKERFILE) $(BUILD_MAKEFILE)
 	$(WRITE) '==> LINK: $<'
 	$(LINK) $(LINK_FLAGS) $(OBJS) -o $(BUILD_OBJS_DIR)/$@
+
+# craft the boot ISO - XXX should this be here? (cw)
+mkiso:	$(BUILD_OBJS_DIR)/kernel
+	$(WRITE) '==> RELEASE: Creating boot ISO in' $(RELEASE_DIR)
+	mkdir -p $(RELEASE_DIR)/boot/grub
+	cp $(BUILD_HARDWARE_SRC_DIR)/iso-grub.cfg $(RELEASE_DIR)/boot/grub/grub.cfg
+	cp $(BUILD_OBJS_DIR)/kernel $(RELEASE_DIR)/boot/
+	rm $(RELEASE_DIR)/diosix.iso
+	grub-mkrescue -o $(RELEASE_DIR)/diosix.iso $(RELEASE_DIR)
+

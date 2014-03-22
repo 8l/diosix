@@ -213,10 +213,14 @@ $ENV{'KERNEL_IDENTIFIER'} = $kernel->{codename};
 $ENV{'DKERNEL_API_REVISION'} = $kernel->{api};
 
 # -------------------------------------------------------------------------
-# ensure we have a build directory
+# ensure we have build and release directories
 my $builder_dir = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{build};
 mkpath($builder_dir);
 $ENV{'BUILD_OBJS_DIR'} = $builder_dir;
+
+my $release_dir = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{release};
+mkpath($release_dir);
+$ENV{'RELEASE_DIR'} = $release_dir;
 
 # -------------------------------------------------------------------------
 # call into the makefile

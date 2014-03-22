@@ -20,6 +20,7 @@
                         <paths>
                                 <source>hardware/pc</source>
                                 <build>build/pc/x86-64/kernel</build>
+                                <release>release/pc/x86-64</release>
                         </paths>
                         <scripts>
                                 <makefile>hardware/pc/makefile-x86-64</makefile>

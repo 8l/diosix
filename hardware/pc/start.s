@@ -66,4 +66,33 @@ section .boot
 bits 32
 align 8
 start:
+
+clear_screen:
+    mov  eax, 0x000b8000
+    xor  ebx, ebx
+clear_screen_loop:
+    mov  [eax], bl
+    add  eax, 2
+    cmp  eax, 0x000b8000 + (2 * (80 * 25))
+    jl   clear_screen_loop
+
+
+print_and_halt:
+    mov  eax, 0x000b8000
+    mov  ebx, teststring
+    xor  ecx, ecx
+    xor  edx, edx
+print_loop:
+    mov  dl, [ebx]
+    cmp  dl, 0
+    je   do_halt
+    mov  [eax], dl
+    add  eax, 2
+    inc  ebx
+    jmp  print_loop
+do_halt:
     jmp $
+
+teststring:
+    db 'hello, world!'
+    db 0
