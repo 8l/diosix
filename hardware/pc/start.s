@@ -27,6 +27,9 @@
 global start
 extern hardware_boot
 
+; reserve initial kernel stack space - 8K should be adequate for the bootstrap cpu
+BOOT_STACK_SIZE     equ 0x2000
+
 ; define numbers for multiboot header, see this PDF for the full spec
 ; http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf
 MULTIBOOT_MAGIC     equ 0xe85250d6
@@ -92,21 +95,92 @@ clear_screen_loop:
     mov  ss, dx
     mov  fs, dx
     mov  gs, dx
-    jmp  (boot_32bit_gdt_kernel_code - boot_32bit_gdt):fixup_stack
+    jmp  (boot_32bit_gdt_kernel_code - boot_32bit_gdt):init_paging
     
-fixup_stack:
-    nop
-    nop
-    jmp  print_and_halt
+init_paging:
+    ; identity map the lowest 1GB of physical RAM to our base virtual
+    ; address 0xffffffff80000000 using 2MB pages. we can create a better
+    ; structure later on once we've reached a higher-level language.
+    ; Our base virtual address is the highest 2GB of virtual mem.
+    ; 
+    ; create the PML4 entries pointing to the shared PDP table
+    mov  edx, boot_pdp_table
+    or   edx, 0xb ; present, r/w, kernel-only, write-thru
+    mov  [boot_pml4_table + 0x000], edx  ; lowest 512GB of virt mem
+    mov  [boot_pml4_table + 0xff8], edx  ; highest 512GB of virt mem
+    
+    ; create the PDP table entries
+    mov  edx, boot_pd_table
+    or   edx, 0xb ; present, r/w, kernel-only, write-thru
+    mov  [boot_pdp_table + 0x000], edx   ; lowest 1GB of virt mem
+    mov  [boot_pdp_table + 0xff0], edx   ; map to our virtual base
+
+    ; create the PD table entries
+    mov  edx, boot_pd_table
+    mov  ecx, 0x0000008b ; present, r/w, kernel-only, write-thru
+init_paging_pd_loop:
+    mov  [edx], ecx
+    add  edx, 8          ; each entry is 8 bytes (64-bit)
+    add  ecx, 0x00200000 ; move onto next 2MB
+    cmp  ecx, 0x40000000 ; stop after 512 entries 
+    jl   init_paging_pd_loop
+
+    ; disable caching on the lowest 2MB, where scary x86 cruft lives
+    mov  edx, boot_pd_table
+    mov  ecx, edx
+    mov  edx, [edx]
+    or   edx, 0x10
+    mov  [ecx], edx
+    ; disable caching on the 14MB-16MB region where ISA still lives(!)
+    add  ecx, (7 * 8)    ; 7th entry, each entry being 8 bytes in size 
+    mov  edx, [ecx]
+    or   edx, 0x10
+    mov  [ecx], edx
+
+    ; seems as good time as any to set up our boot stack
+    ; and preserve our eax and ebx from the bootloader
+    mov  esp, boot_kernel_stack_top
+    push eax
+    push ebx
+
+    ; enable write-protect for the kernel: this is needed for
+    ; copy-on-write later, and to catch the kernel writing to
+    ; read-only pages.
+    mov  ecx, cr0
+    or   ecx, 0x10000    ; bit 16 of CR0
+    mov  cr0, ecx
+ 
+    ; tell the CPU where to find the PML4 in phys mem
+    mov  ecx, boot_pml4_table
+    mov  cr3, ecx
+
+    ; enable PAE mode, global pages
+    mov  ecx, cr4
+    or   ecx, 0xa0       ; bits 7 and 5 in CR4 
+    mov  cr4, ecx
+
+    ; request model info from ecx code, CPU stores result in edx:eax
+    mov  ecx, 0xc0000080 ; the IA32_EFER model-specific register
+    rdmsr                ; check 'em
+    or   eax, 0x100      ; set bit 8 (IA-32e Mode Enable)
+    wrmsr                ; update to enable 64-bit long mode
+
+    ; still here? cool. let's switch on paging.
+    mov  eax, cr0
+    or   eax, 0x80000000 ; set bit 31
+    mov  cr0, eax
+
+    jmp print_and_halt
 
 ; -------------------------------------------------------------------
 ;   mov  ecx, (boot_32bit_gdt_kernel_code - boot_32bit_gdt)
 
+; debug: write a hex number to the first serial port and shutdown/halt
 dump_hex_and_halt:
 ; => ecx = value to write
 ; <= doesn't return: will power off (or at least halt)
     mov  ebx, 8
-    mov  dx, 0x3f8
+    mov  dx, 0x3f8          ; COM1's data port 
 dump_hex_and_halt_hexloop:
     mov  eax, ecx
     shr  eax, 28
@@ -153,7 +227,7 @@ do_halt:
     jmp $
 
 teststring:
-    db 'I survived the GDT reload!'
+    db 'Hello, world, FROM 64-BIT MODE WITH PAGING!'
     db 0
 
 ; -------------------------------------------------------------------
@@ -189,4 +263,22 @@ boot_32bit_gdt_ptr:
     dw boot_32bit_gdt_end - boot_32bit_gdt - 1 ; size of gdt - 1
     dd boot_32bit_gdt
 
+; -------------------------------------------------------------------
+; boot core's level 4 page table, ia-32e using 2MB pages
+; structure defined in Table 4-14, Vol 3A (Paging) of Intel ia32/64
+; software developer manual.
+align 4096
+boot_pml4_table:
+    times 512 dq 0
+boot_pdp_table:
+    times 512 dq 0
+boot_pd_table:
+    times 512 dq 0
+
+; -------------------------------------------------------------------
+; boot core's kernel stack
+align 32
+boot_kernel_stack:
+    resb BOOT_STACK_SIZE
+boot_kernel_stack_top:
 
