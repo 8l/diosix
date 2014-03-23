@@ -27,7 +27,7 @@ WRITE 		= $(Q)echo
 .SUFFIXES: .s .c
 
 # define our clang, linker and nasm flags
-RUST_FLAGS	= --lib
+RUST_FLAGS	= --lib --out-dir $(BUILD_OBJS_DIR)
 CC_FLAGS	= -m64 \
 		  -ffreestanding -mcmodel=large \
 		  -mno-red-zone	-mno-mmx -mno-sse \
@@ -43,15 +43,15 @@ LINK 		= $(Q)$(BUILD_LINKER) $(LINK_FLAGS)
 ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 
 # the actual components in the microkernel
-OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/boot.o \
-		  $(BUILD_OBJS_DIR)/locore.o \
+OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
+		  $(BUILD_OBJS_DIR)/boot.o $(BUILD_OBJS_DIR)/io.o \
 		  $(BUILD_OBJS_DIR)/lang.o
 
 # targets
 all: kernel mkiso
 
 # standard cmd lines
-BUILD.rs	= $(RUST) -c $< -o $@
+BUILD.rs	= $(RUST) -c $<
 BUILD.c		= $(CC) -c $< -o $@
 BUILD.s		= $(ASM) $< -o $@
 
@@ -65,6 +65,10 @@ $(BUILD_OBJS_DIR)/locore.o:	$(BUILD_HARDWARE_SRC_DIR)/locore.s
 				$(BUILD.s)
 
 $(BUILD_OBJS_DIR)/boot.o:	$(BUILD_HARDWARE_SRC_DIR)/boot.rs
+				$(WRITE) '==> COMPILE: $<'
+				$(BUILD.rs)
+
+$(BUILD_OBJS_DIR)/io.o:		$(BUILD_HARDWARE_SRC_DIR)/io.rs
 				$(WRITE) '==> COMPILE: $<'
 				$(BUILD.rs)
 
@@ -89,6 +93,7 @@ mkiso:	$(BUILD_OBJS_DIR)/kernel
 	mkdir -p $(RELEASE_DIR)/boot/grub
 	cp $(BUILD_HARDWARE_SRC_DIR)/iso-grub.cfg $(RELEASE_DIR)/boot/grub/grub.cfg
 	cp $(BUILD_OBJS_DIR)/kernel $(RELEASE_DIR)/boot/
+	touch $(RELEASE_DIR)/diosix.iso
 	rm $(RELEASE_DIR)/diosix.iso
 	grub-mkrescue -o $(RELEASE_DIR)/diosix.iso $(RELEASE_DIR)
 

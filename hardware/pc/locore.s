@@ -22,14 +22,35 @@
 
 ; ----------------------------------------------------------------------------
 ;  Provide low-level routines for the x86 PC architecture
+;  follows x86-64 cdecl: http://www.x86-64.org/documentation/abi.pdf
 ; ----------------------------------------------------------------------------
 
 bits 64
-global __morestack
 
+global __morestack
 ; __morestack - Rust's magic stack overflow handling. For now, assume the
 ; kernel has enough stack space for each thread.
 ; See: https://github.com/mozilla/rust/blob/master/src/rt/arch/i386/morestack.S
 __morestack:
+    ret
+
+global hw_ioport_outb
+; hw_ioport_outb - write a byte to an x86 IO port
+; => rdi = port number (16-bit)
+;    rsi = byte to write
+hw_ioport_outb:
+    mov  rdx, rdi       ; it's ok to trash rdx, rax
+    mov  rax, rsi
+    out  dx, al
+    ret
+
+global hw_ioport_readb
+; hw_ioport_readb - read a byte from an x86 IO port
+; => rdi = port number (16-bit)
+; <= eax = byte read
+hw_ioport_readb:
+    xor  rax, rax
+    mov  rdx, rdi       ; it's ok to trash edx
+    in   al, dx
     ret
 

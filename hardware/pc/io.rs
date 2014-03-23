@@ -1,4 +1,4 @@
-/* kernel/lang.rs
+/* hardware/pc/io.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,20 +21,41 @@
  * IN THE SOFTWARE.
  */
 
-/* ------------------------------------------------------------------
-    Provide support for Rust on bare-metal
-   --------------------------------------------------------------- */
+/* provide x86 IO port access to Rust code, it's really a wrapper around 
+   assembly routines in locore.s */
 
-#[crate_type = "lib"];
 #[no_std];
+#[crate_type = "lib"];
 
-#[cold]
-#[no_mangle]
-#[lang="fail_bounds_check"]
-/* fail_bounds_check 
-   Called when a bounds checked failed, now we have to  deal with it */
-pub fn fail_bounds_check(_: *u8, _: uint, _: uint, _: uint)
+extern "cdecl"
 {
-  /* XXX attempt to recover gracefully */
+  fn hw_ioport_outb(port: u16, val: u8);
+  fn hw_ioport_readb(port: u16);
+}
+
+/* io::write_byte
+   Write a byte to the given x86 IO port
+   => port = port number to access
+   => val = byte to write
+*/
+pub fn write_byte(port: u16, val: u8)
+{
+  unsafe
+  {
+    hw_ioport_outb(port, val);
+  }
+}
+
+/* io::read_byte
+   Read a byte from the given x86 IO port
+   => port = port number to access
+   <= byte read
+*/
+pub fn read_byte(port: u16)
+{
+  unsafe
+  {
+    return hw_ioport_readb(port);
+  }
 }
 

@@ -25,12 +25,7 @@
 #[feature(asm)];
 #[path="../../kernel/lang.rs"]
 mod lang;
-
-#[no_mangle]
-pub unsafe fn outb(port: u16, value: u8)
-{
-  asm!("outb %al, %dx" :: "{dx}" (port), "{al}" (value) :: "volatile" );
-}
+mod io;
 
 /* hardware_boot
    Called from start.s when the Rust environment has been set up. This function
@@ -46,10 +41,7 @@ pub fn hardware_boot()
   let mut index = 0;
   while s[index] != '\0' as u8
   {
-    unsafe
-    {
-      outb(0x3f8, s[index]);
-    }
+    io::write_byte(0x3f8, s[index]);
     index += 1;
   }
 }
