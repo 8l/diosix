@@ -168,6 +168,7 @@ init_paging_pd_loop:
 
     ; push the kernel code segement selector (0x10)
     ; and then the address of our 64-bit code to execute
+    mov  esp, boot_kernel_stack_top
     push boot_64bit_gdt_kernel_code - boot_64bit_gdt
     push goodbye_32bit
     retf
