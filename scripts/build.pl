@@ -196,6 +196,7 @@ if($config->{architecture}->{$cmdline_arch}->{description} eq "")
 $ENV{'BUILD_ARCH'} = $cmdline_arch;
 $ENV{'BUILD_HARDWARE'} = $cmdline_hardware;
 $ENV{'BUILD_FEATURES'} = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{features};
+$ENV{'BUILD_RUST'} = $config->{architecture}->{$cmdline_arch}->{toolchain}->{rust};
 $ENV{'BUILD_CC'} = $config->{architecture}->{$cmdline_arch}->{toolchain}->{cc};
 $ENV{'BUILD_LINKER'} = $config->{architecture}->{$cmdline_arch}->{toolchain}->{linker};
 $ENV{'BUILD_ASM'} = $config->{architecture}->{$cmdline_arch}->{toolchain}->{assembler};

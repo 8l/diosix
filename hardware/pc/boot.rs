@@ -1,4 +1,4 @@
-/* hardware/pc/boot.c
+/* hardware/pc/boot.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,14 +21,26 @@
  * IN THE SOFTWARE.
  */
 
+#[no_std];
+#[feature(asm)];
+
+#[no_mangle]
+pub unsafe fn outb(port: u16, value: u8)
+{
+  asm!("outb %al, %dx" :: "{dx}" (port), "{al}" (value) :: "volatile" );
+}
+
 /* hardware_boot
-   Called from start.s when the C ennvironment has been set up. This function
+   Called from start.s when the Rust environment has been set up. This function
    gradually brings the system up until we can start running userspace
    threads. This function shouldn't return unless something went wrong in the
    kernel boot sequence.
    <= Returns to trigger a low-level panic halt.
 */
-void hardware_boot(void)
+#[no_mangle]
+pub unsafe fn hardware_boot()
 {
-    /* tum-te-tum */
+  outb(0x3f8, 65);
+  outb(0x3f8, 10);
 }
+

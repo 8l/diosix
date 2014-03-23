@@ -30,16 +30,19 @@ extern hardware_boot
 ; reserve initial kernel stack space - 8K should be adequate for the bootstrap cpu
 BOOT_STACK_SIZE     equ 0x2000
 
+; the kernel is mapped into the highest 2GB of the virtual memory map.
+; it is physically loaded at the 1MB phys mem mark (0x100000)
+KERNEL_VIRTUAL_BASE equ 0xffffffff80000000
+
 ; define numbers for multiboot header, see this PDF for the full spec
 ; http://download-mirror.savannah.gnu.org/releases/grub/phcoder/multiboot.pdf
 MULTIBOOT_MAGIC     equ 0xe85250d6
-
-bits 32
 
 ; -------------------------------------------------------------------
 ; include necessary messy magic to keep Grub2 bootloader happy. we're loaded
 ; as a 32-bit x86 ELF executable, then we quickly switch to 64-bit mode
 section .multibootheader
+bits 32
 align 8
 multibootheader:
     dd MULTIBOOT_MAGIC                       ; magic number
@@ -77,17 +80,11 @@ align 8
 ;    ebx = phys addr of multiboot data
 start:
 
-; debug: clear the textmode screen
-clear_screen:
-    mov  eax, 0x000b8000
-    xor  ebx, ebx
-clear_screen_loop:
-    mov  [eax], bl
-    add  eax, 2
-    cmp  eax, 0x000b8000 + (2 * (80 * 25))
-    jl   clear_screen_loop
+    ; preserve the multiboot2 structure
+    mov ecx, boot_multiboot2_data
+    mov [ecx], ebx
 
-    ; load our GDT, discarding the bootloader's
+    ; load our 32bit GDT, discarding the bootloader's
     lgdt [boot_32bit_gdt_ptr]
     mov  dx, boot_32bit_gdt_kernel_data - boot_32bit_gdt
     mov  ds, dx
@@ -137,12 +134,6 @@ init_paging_pd_loop:
     or   edx, 0x10
     mov  [ecx], edx
 
-    ; seems as good time as any to set up our boot stack
-    ; and preserve our eax and ebx from the bootloader
-    mov  esp, boot_kernel_stack_top
-    push eax
-    push ebx
-
     ; enable write-protect for the kernel: this is needed for
     ; copy-on-write later, and to catch the kernel writing to
     ; read-only pages.
@@ -163,43 +154,46 @@ init_paging_pd_loop:
     mov  ecx, 0xc0000080 ; the IA32_EFER model-specific register
     rdmsr                ; check 'em
     or   eax, 0x100      ; set bit 8 (IA-32e Mode Enable)
-    wrmsr                ; update to enable 64-bit long mode
+    wrmsr                ; update to enable IA-32e addressing
 
     ; still here? cool. let's switch on paging.
     mov  eax, cr0
     or   eax, 0x80000000 ; set bit 31
     mov  cr0, eax
 
-    jmp print_and_halt
+    ; load the 64bit GDT. we have to do a little trick
+    ; to get the processor to jump into 64-bit long mode
+    mov  eax, boot_64bit_gdt_ptr  
+    lgdt [eax]
+
+    ; push the kernel code segement selector (0x10)
+    ; and then the address of our 64-bit code to execute
+    push boot_64bit_gdt_kernel_code - boot_64bit_gdt
+    push goodbye_32bit
+    retf
+
+bits 64
+goodbye_32bit:
+    ; we're now executing in our high virtual memory in 64bit long mode
+    ; set up the kernel data segement selector (0x08) and fix up the stack
+    mov  eax, boot_64bit_gdt_kernel_data - boot_64bit_gdt
+    mov  ds, ax
+    mov  es, ax
+    mov  ss, ax
+    mov  rsp, boot_kernel_stack_top
+    add  rsp, KERNEL_VIRTUAL_BASE
+
+    ; fix up the 64bit GDT too as we'll be ditching the identity paging soon
+    mov  rax, boot_64bit_gdt_high_ptr
+    lgdt [rax]
+
+    ; ignition sequence!
+    mov rax, hardware_boot
+    call rax
+    
+    ; fall through to force_dirty_power_off
 
 ; -------------------------------------------------------------------
-;   mov  ecx, (boot_32bit_gdt_kernel_code - boot_32bit_gdt)
-
-; debug: write a hex number to the first serial port and shutdown/halt
-dump_hex_and_halt:
-; => ecx = value to write
-; <= doesn't return: will power off (or at least halt)
-    mov  ebx, 8
-    mov  dx, 0x3f8          ; COM1's data port 
-dump_hex_and_halt_hexloop:
-    mov  eax, ecx
-    shr  eax, 28
-    and  eax, 0xf
-    cmp  eax, 9
-    jle  dump_hex_and_halt_isanumber
-    add  eax, 0x41 - 10     ; character code for 'A'
-    jmp  dump_hex_and_halt_hexoutput
-dump_hex_and_halt_isanumber:
-    add  eax, 0x30          ; character code for '0'
-dump_hex_and_halt_hexoutput:
-    out  dx, al
-    shl  ecx, 4
-    sub  ebx, 1
-    cmp  ebx, 0
-    jne  dump_hex_and_halt_hexloop
-    mov  al, 0xa
-    out  dx, al
-
 ; debug: attempt to force a power shutdown or halt the system
 force_dirty_power_off:
     mov  dx, 0xb004
@@ -208,60 +202,86 @@ force_dirty_power_off:
     hlt
     jmp $
 
-; debug: write a line to the textmode screen
-print_and_halt:
-    mov  eax, 0x000b8000
-    mov  ebx, teststring
-    xor  ecx, ecx
-    xor  edx, edx
-print_loop:
-    mov  dl, [ebx]
-    cmp  dl, 0
-    je   do_halt
-    mov  [eax], dl
-    add  eax, 2
-    inc  ebx
-    jmp  print_loop
-do_halt:
-    hlt
-    jmp $
-
-teststring:
-    db 'Hello, world, FROM 64-BIT MODE WITH PAGING!'
-    db 0
-
 ; -------------------------------------------------------------------
 ; boot gdt structures
 align 16
 boot_32bit_gdt:
     ; null descriptor
-    dw 0      ; limit 15:0
-    dw 0      ; base 15:0
-    db 0      ; base 23:16
-    db 0      ; type
-    db 0      ; limit 19:16, flags
-    db 0      ; base 31:24
+    dw 0x0000 ; limit 15:0
+    dw 0x0000 ; base 15:0
+    db 0x00   ; base 23:16
+    db 0x00   ; type
+    db 0x00   ; limit 19:16, flags
+    db 0x00   ; base 31:24
 
 boot_32bit_gdt_kernel_data:
     dw 0xffff
-    dw 0
-    db 0
+    dw 0x0000
+    db 0x00
     db 0x92   ; present, ring 0, data, expand-up, writable
     db 0xcf   ; page-granular (4 gig limit), 32-bit
-    db 0
+    db 0x00
 
 boot_32bit_gdt_kernel_code:
     dw 0xffff
-    dw 0
-    db 0
+    dw 0x0000
+    db 0x00
     db 0x9a   ; present, ring 0, code, non-conforming, readable
     db 0xcf   ; page-granular (4 gig limit), 32-bit
-    db 0
+    db 0x00
 boot_32bit_gdt_end:
 
+align 16
+boot_64bit_gdt:
+    ; null descriptor
+    dq 0x0000000000000000
+
+boot_64bit_gdt_kernel_data:
+    dw 0x0000 ; limit ignored
+    dw 0x0000
+    db 0x00
+    db 0x92   ; present, ring 0, data, writable
+    db 0xa0   ; 4KB page-granular, 64-bit
+    db 0x00
+    
+boot_64bit_gdt_kernel_code:
+    dw 0x0000 ; limit ignored
+    dw 0x0000
+    db 0x00
+    db 0x9a   ; present, ring 0, code, readable, non-conforming
+    db 0xa0   ; 4KB page-granular, 64-bit
+    db 0x00
+
+boot_64bit_gdt_user_data:
+    dw 0x0000 ; limit ignored
+    dw 0x0000
+    db 0x00
+    db 0xf2   ; present, ring 3, data, writable
+    db 0xa0   ; 4KB page-granular, 64-bit
+    db 0x00
+    
+boot_64bit_gdt_user_code:
+    dw 0x0000 ; limit ignored
+    dw 0x0000
+    db 0x00
+    db 0xfa   ; present, ring 3, code, readable, non-conforming
+    db 0xa0   ; 4KB page-granular, 64-bit
+    db 0x00
+boot_64bit_gdt_end:
+
+; descriptor for the 32bit boot GDT
 boot_32bit_gdt_ptr:
     dw boot_32bit_gdt_end - boot_32bit_gdt - 1 ; size of gdt - 1
     dd boot_32bit_gdt
+
+; descriptor for the 64bit boot GDT
+boot_64bit_gdt_ptr:
+    dw boot_64bit_gdt_end - boot_64bit_gdt - 1
+    dd boot_64bit_gdt
+
+boot_64bit_gdt_high_ptr:
+    dw boot_64bit_gdt_end - boot_64bit_gdt - 1
+    dq boot_64bit_gdt + KERNEL_VIRTUAL_BASE
 
 ; -------------------------------------------------------------------
 ; boot core's level 4 page table, ia-32e using 2MB pages
@@ -281,4 +301,9 @@ align 32
 boot_kernel_stack:
     resb BOOT_STACK_SIZE
 boot_kernel_stack_top:
+
+; -------------------------------------------------------------------
+; somewhere to stash a pointer to the multiboot2 structures
+boot_multiboot2_data:
+    dd 0x0
 

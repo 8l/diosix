@@ -9,6 +9,7 @@
         <architecture name="x86-64">
                 <description>64-bit x86 Intel (x64, x86_64, amd64)</description>
                 <toolchain>
+                        <rust>rustc</rust>
                         <cc>gcc</cc>
                         <linker>ld</linker>
                         <assembler>nasm</assembler>
