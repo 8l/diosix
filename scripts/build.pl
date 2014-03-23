@@ -227,6 +227,7 @@ $ENV{'RELEASE_DIR'} = $release_dir;
 # call into the makefile
 my $hardware_src_dir = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{source};
 $ENV{'BUILD_HARDWARE_SRC_DIR'} = $hardware_src_dir;
+$ENV{'BUILD_KERNEL_SRC_DIR'} = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{core};
 
 my $makefile = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{scripts}->{makefile};
 my $linkerfile = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{scripts}->{linkerfile};

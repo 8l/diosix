@@ -11,7 +11,7 @@
 # BUILD_RUST, BUILD_CC, BUILD_LINKER, BUILD_OBJDUMP, BUILD_STRIP
 # BUILD_READELF, BUILD_ASM, BUILD_TIMESTAMP, BUILD_REVISION
 # BUILD_OBJS_DIR, BUILD_HARDWARE_SRC_DIR, BUILD_MAKEFILE,
-# BUILD_LINKERFILE, RELEASE_DIR
+# BUILD_LINKERFILE, RELEASE_DIR, BUILD_KERNEL_SRC_DIR
 # ------------------------------------------------------------
 
 # define the build version
@@ -27,7 +27,7 @@ WRITE 		= $(Q)echo
 .SUFFIXES: .s .c
 
 # define our clang, linker and nasm flags
-RUST_FLAGS	= --lib 
+RUST_FLAGS	= --lib
 CC_FLAGS	= -m64 \
 		  -ffreestanding -mcmodel=large \
 		  -mno-red-zone	-mno-mmx -mno-sse \
@@ -44,7 +44,8 @@ ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 
 # the actual components in the microkernel
 OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/boot.o \
-		  $(BUILD_OBJS_DIR)/locore.o
+		  $(BUILD_OBJS_DIR)/locore.o \
+		  $(BUILD_OBJS_DIR)/lang.o
 
 # targets
 all: kernel mkiso
@@ -54,7 +55,7 @@ BUILD.rs	= $(RUST) -c $< -o $@
 BUILD.c		= $(CC) -c $< -o $@
 BUILD.s		= $(ASM) $< -o $@
 
-# per-source rules
+# port-specific per-source rules
 $(BUILD_OBJS_DIR)/start.o:	$(BUILD_HARDWARE_SRC_DIR)/start.s
 				$(WRITE) '==> ASSEMBLE: $<'
 				$(BUILD.s)
@@ -66,6 +67,12 @@ $(BUILD_OBJS_DIR)/locore.o:	$(BUILD_HARDWARE_SRC_DIR)/locore.s
 $(BUILD_OBJS_DIR)/boot.o:	$(BUILD_HARDWARE_SRC_DIR)/boot.rs
 				$(WRITE) '==> COMPILE: $<'
 				$(BUILD.rs)
+
+# portable per-source rules
+$(BUILD_OBJS_DIR)/lang.o:	$(BUILD_KERNEL_SRC_DIR)/lang.rs
+				$(WRITE) '==> COMPILE: $<'
+				$(BUILD.rs)
+
 
 # explicit rules
 

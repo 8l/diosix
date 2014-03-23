@@ -19,6 +19,7 @@
                         <description>diosix microkernel</description>
                         <features>64-bit SMP MMU</features>
                         <paths>
+                                <core>kernel</core>
                                 <source>hardware/pc</source>
                                 <build>build/pc/x86-64/kernel</build>
                                 <release>release/pc/x86-64</release>

@@ -1,4 +1,4 @@
-/* hardware/pc/boot.rs
+/* kernel/lang.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,36 +21,18 @@
  * IN THE SOFTWARE.
  */
 
+/* ------------------------------------------------------------------
+    Provide support for Rust on bare-metal
+   --------------------------------------------------------------- */
+
 #[no_std];
-#[feature(asm)];
-#[path="../../kernel/lang.rs"]
-mod lang;
 
-#[no_mangle]
-pub unsafe fn outb(port: u16, value: u8)
+#[cold]
+#[lang="fail_bounds_check"]
+/* fail_bounds_check 
+   Called when a bounds checked failed for us to deal with */
+pub fn fail_bounds_check(_: *u8, _: uint, _: uint, _: uint)
 {
-  asm!("outb %al, %dx" :: "{dx}" (port), "{al}" (value) :: "volatile" );
-}
-
-/* hardware_boot
-   Called from start.s when the Rust environment has been set up. This function
-   gradually brings the system up until we can start running userspace
-   threads. This function shouldn't return unless something went wrong in the
-   kernel boot sequence.
-   <= Returns to trigger a low-level panic halt.
-*/
-#[no_mangle]
-pub fn hardware_boot()
-{
-  let s: &str = "this is diosix!\n\0";
-  let mut index = 0;
-  while s[index] != '\0' as u8
-  {
-    unsafe
-    {
-      outb(0x3f8, s[index]);
-    }
-    index += 1;
-  }
+  /* XXX attempt to recover gracefully */
 }
 
