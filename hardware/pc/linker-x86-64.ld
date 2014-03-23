@@ -15,14 +15,6 @@ SECTIONS
 		*(.multibootheader)
 		*(.boot)
 		. = ALIGN(4096);
-		Pml4 = .;
-		. += 0x1000;
-		Pdpt = .;
-		. += 0x1000;
-		Pd = .;
-		. += 0x1000;
-		. += 0x8000;
-		Stack = .;
 	}
 
 	. += VIRT_BASE;
