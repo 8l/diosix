@@ -1,45 +1,44 @@
-README draft 2013-12-27-1045 GMT ... temporary document (cw)
+Welcome to diosix, the tiny hardworking microkernel
+---------------------------------------------------
 
-Welcome to Diosix
------------------
+Diosix is an experimental, lightweight and scalable microkernel
+operating system for multiprocessor x86-64, ARM32 and ARM64 systems.
+It's written in a mix of assembler and Rust, and some Perl and GNU
+make to glue it together. The focus is security, isolation of
+processes, and as minimal overhead as possible.
 
-Once upon a time, I wrote a natty little fully fledged SMP microkernel
-with a minimal userspace stack that included a virtual filesystem and
-PCI manager, plus keyboard, video, ATA and network drivers. It worked,
-albeit on 32-bit legacy i486-compatible systems and a 32-bit
-ARMv4-compatible board. Yes, it worked, but it wasn't ready for 64-bit
-nor was it optimised: I wanted a fast, secure 64-bit hot-lockless
-microkernel that could be regression tested and tuned depending on
-the userland software above it.
-
-So now's the time to go back to the drawing board and make a proper
-reliable operating system backed by a rewritten microkernel that can
-be fully tested and is safe across 64-bit and 32-bit systems, whether
-they are x86 or ARM. Hopefully it won't be a complete rewrite from
-scratch, as I'll be bringing good code from the old project across,
-but the architecture will change.
-
-Eventually, the project will evolve into a distributed system but to
-what end I've not decided. Maybe someone can suggest an application :-)
-
-So that's why there is a lack of source code right now: I'm writing
-it all again, but better, cleaner and with unit testing in mind.
+I want the project to evolve into a distributed system but to what
+end I've not decided. Maybe someone can suggest an application :-)
 
 Why share it?
 -------------
-
-I've made this available under an open-source licence for other people
-to do what the will with it and potentially contribute to it.
-
-I don't intend to write an entire OS from scratch - ideally, I want to
-work on the microkernel and develop the distributed system processes,
-and use existing drivers, libraries and applications from other
-open-source projects on top.
+I've made this available under an open-source licence for other
+people to do what they will with it and potentially contribute to
+it. I don't intend to write an entire OS from scratch - ideally,
+I want to work on the microkernel and develop the distributed
+system processes, and use existing drivers, libraries and
+applications from other open-source projects on top.
 
 The main goal is to have fun and learn something new.
 
-Contact
--------
+Source licence
+--------------
 
-Email: chris@diodesign.co.uk
-Web: diosix.org
+Diosix is licensed under the MIT License.
+
+Contact and key URLs
+--------------------
+
+Lead developer: Chris Williams (diodesign@gmail.com)
+Website:        http://www.diosix.org/
+Source repo:    https://code.google.com/p/diosix/source/checkout
+Source mirror:  https://github.com/diodesign/diosix
+
+Code signing
+------------
+
+As of March 23, 2014, any releases will be signed by Chris
+Williams using PGP key ID 3EB79D2E, fingerprint:
+1FD3 81D9 6344 FC49 9C5F FBC1 0EC6 E70E 3EB7 9D2E
+Note, this key will expire on October 30, 2014.
+
