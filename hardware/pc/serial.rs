@@ -1,4 +1,4 @@
-/* hardware/pc/boot.rs
+/* hardware/pc/serial.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,32 +21,54 @@
  * IN THE SOFTWARE.
  */
 
+/* provide a tidy interface to the underlying serial port hardware,
+   for kernel debugging purposes */
+  
 #[no_std];
-#[feature(asm)];
+#[crate_type = "lib"];
 
-/* Rust runtime code from the kernel */
-#[path="../../kernel/lang.rs"]
-mod lang;
+mod io;
 
-/* port-specific libraries */
-mod serial;
+/* assume this is the default port for COM1 */
+static com1_io_base: u16 = 0x3f8;
 
-/* hardware_boot
-   Called from start.s when the Rust environment has been set up. This function
-   gradually brings the system up until we can start running userspace
-   threads. This function shouldn't return unless something went wrong in the
-   kernel boot sequence.
-   <= Returns to trigger a low-level panic halt.
-*/
-#[no_mangle]
-pub fn hardware_boot()
+/* line status bit to indicate port is ready to transmit */
+static com1_tx_ready: u8 = 0x20;
+
+/* describe registers */
+enum registers
 {
-  let s: &str = "this is diosix!\n\0";
-  let mut index = 0;
-  while s[index] != '\0' as u8
+  data = 0,
+  irq = 1,
+  status = 5,
+}
+
+/* serial::init
+   Initialize the serial port COM1 for debug in and out
+*/
+pub fn init()
+{
+  /* disable interrupts for sake of simplicity.
+     use the firmware's defaults for other settings */
+  io::write_byte(com1_io_base + irq as u16, 0 as u8);
+}
+
+/* serial::write_byte
+   Write an 8-bit character to the serial port
+   => ch = byte to write when the port is ready
+*/
+pub fn write_byte(ch: u8)
+{
+  /* spin until the port is ready to transmit */
+  loop
   {
-    serial::write_byte(s[index]);
-    index += 1;
+    let tx_status: u8 = io::read_byte(com1_io_base + status as u16);
+    if (tx_status & com1_tx_ready) != 0
+    {
+      break;
+    }
   }
+
+  io::write_byte(com1_io_base + data as u16, ch);
 }
 

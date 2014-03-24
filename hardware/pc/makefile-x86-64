@@ -45,6 +45,7 @@ ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 # the actual components in the microkernel
 OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
 		  $(BUILD_OBJS_DIR)/boot.o $(BUILD_OBJS_DIR)/io.o \
+		  $(BUILD_OBJS_DIR)/serial.o \
 		  $(BUILD_OBJS_DIR)/lang.o
 
 # targets
@@ -55,7 +56,7 @@ BUILD.rs	= $(RUST) -c $<
 BUILD.c		= $(CC) -c $< -o $@
 BUILD.s		= $(ASM) $< -o $@
 
-# port-specific per-source rules
+# port-specific assembler rules
 $(BUILD_OBJS_DIR)/start.o:	$(BUILD_HARDWARE_SRC_DIR)/start.s
 				$(WRITE) '==> ASSEMBLE: $<'
 				$(BUILD.s)
@@ -64,11 +65,16 @@ $(BUILD_OBJS_DIR)/locore.o:	$(BUILD_HARDWARE_SRC_DIR)/locore.s
 				$(WRITE) '==> ASSEMBLE: $<'
 				$(BUILD.s)
 
+# port-sopecific Rust source rules
 $(BUILD_OBJS_DIR)/boot.o:	$(BUILD_HARDWARE_SRC_DIR)/boot.rs
 				$(WRITE) '==> COMPILE: $<'
 				$(BUILD.rs)
 
 $(BUILD_OBJS_DIR)/io.o:		$(BUILD_HARDWARE_SRC_DIR)/io.rs
+				$(WRITE) '==> COMPILE: $<'
+				$(BUILD.rs)
+
+$(BUILD_OBJS_DIR)/serial.o:	$(BUILD_HARDWARE_SRC_DIR)/serial.rs
 				$(WRITE) '==> COMPILE: $<'
 				$(BUILD.rs)
 

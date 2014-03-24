@@ -30,7 +30,7 @@
 extern "cdecl"
 {
   fn hw_ioport_outb(port: u16, val: u8);
-  fn hw_ioport_readb(port: u16);
+  fn hw_ioport_readb(port: u16) -> u8;
 }
 
 /* io::write_byte
@@ -51,11 +51,11 @@ pub fn write_byte(port: u16, val: u8)
    => port = port number to access
    <= byte read
 */
-pub fn read_byte(port: u16)
+pub fn read_byte(port: u16) -> u8
 {
   unsafe
   {
-    return hw_ioport_readb(port);
+    return hw_ioport_readb(port) as u8;
   }
 }
 
