@@ -25,6 +25,7 @@
 ;  follows x86-64 cdecl: http://www.x86-64.org/documentation/abi.pdf
 ; ----------------------------------------------------------------------------
 
+section .boot
 bits 64
 
 global __morestack

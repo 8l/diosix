@@ -21,7 +21,11 @@
  * IN THE SOFTWARE.
  */
 
+use serial;
+
 static kernel_banner: &'static str = "diosix (x86-64 pc) now running\n";
+
+/* ---- kernel entry point for Rust ----------------------------------------- */
 
 /* kernel_start
    Called from start.s when the Rust environment has been set up. This function
@@ -30,7 +34,7 @@ static kernel_banner: &'static str = "diosix (x86-64 pc) now running\n";
    kernel boot sequence.
    <= Returns to trigger a low-level panic halt.
 */
-#[no_mangle]
+#[no_mangle] /* don't mangle the function name, it's being called from asm */
 pub fn kernel_start()
 {
   serial::init(); /* prepare the serial port for debug output */

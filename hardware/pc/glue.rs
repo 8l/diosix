@@ -25,11 +25,9 @@
    resolve its imports and dependencies. 'There's not a problem I can't fix,
    'cos I can do it in the mix' */
 
-#[crate_id = "diosix#0.1"]
-#[crate_type = "lib"]
+#[crate_type = "lib"];
 
-#[no_std]
-#[no_core]
+#[no_std];
 
 /* pull in rust-core until rust's std library is freestanding */
 extern crate core;

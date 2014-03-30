@@ -23,11 +23,13 @@
 
 /* provide a tidy interface to the underlying serial port hardware,
    for kernel debugging purposes */
-  
-use core::mem::transmute;
+
+use core;
 use core::slice::iter;
 use core::iter::Iterator;
-use core::option::{Some, Option, None};
+use core::option::{Some, None};
+
+use io;
 
 /* assume this is the default port for COM1 */
 static com1_io_base: u16 = 0x3f8;
@@ -36,11 +38,11 @@ static com1_io_base: u16 = 0x3f8;
 static com1_tx_ready: u8 = 0x20;
 
 /* describe registers */
-enum registers
+enum Registers
 {
-  data = 0,
-  irq = 1,
-  status = 5,
+  Data = 0,
+  Irq = 1,
+  Status = 5,
 }
 
 /* serial::init
@@ -50,7 +52,7 @@ pub fn init()
 {
   /* disable interrupts for sake of simplicity.
      use the firmware's defaults for other settings */
-  io::write_byte(com1_io_base + irq as u16, 0 as u8);
+  io::write_byte(com1_io_base + Irq as u16, 0 as u8);
 }
 
 /* serial::write_byte
@@ -62,14 +64,14 @@ pub fn write_byte(ch: u8)
   /* spin until the port is ready to transmit */
   loop
   {
-    let tx_status: u8 = io::read_byte(com1_io_base + status as u16);
+    let tx_status: u8 = io::read_byte(com1_io_base + Status as u16);
     if (tx_status & com1_tx_ready) != 0
     {
       break;
     }
   }
 
-  io::write_byte(com1_io_base + data as u16, ch);
+  io::write_byte(com1_io_base + Data as u16, ch);
 }
 
 /* serial::write_string
@@ -80,7 +82,7 @@ pub fn write_string(s: &str)
 {
   /* Rust stores strings with a length, so let's
      do this properly rather than scan for a \0 */
-  let byte_stream: &[u8] = to_bytes(s);
+  let byte_stream: &[u8] = core::str::as_bytes(s);
   for byte in core::slice::iter(byte_stream)
   {
     write_byte(*byte);
