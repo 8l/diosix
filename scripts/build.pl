@@ -42,16 +42,19 @@ my @supported_components = ("kernel");
 my $cmdline_arch;
 my $cmdline_hardware;
 my $cmdline_component;
+my $cmdline_submodules;
 
 Getopt::Long::Configure('bundling');
 GetOptions('arch=s' => \$cmdline_arch,
 	   'hardware=s' => \$cmdline_hardware,
-	   'component=s' => \$cmdline_component);
+	   'component=s' => \$cmdline_component,
+           'update-submodules' => \$cmdline_submodules);
 
 # Sanitize command line options
-$cmdline_arch      =~ s/[^A-Za-z0-9\-]//g;
-$cmdline_hardware  =~ s/[^A-Za-z0-9\-]//g;
-$cmdline_component =~ s/[^A-Za-z0-9\-]//g;
+$cmdline_arch       =~ s/[^A-Za-z0-9\-]//g;
+$cmdline_hardware   =~ s/[^A-Za-z0-9\-]//g;
+$cmdline_component  =~ s/[^A-Za-z0-9\-]//g;
+$cmdline_submodules =~ s/[^01]//g;
 
 # if we've been given nothing then print the syntax and bail
 if($cmdline_arch eq "" && $cmdline_hardware eq "" && $cmdline_component eq "")
@@ -222,6 +225,14 @@ $ENV{'BUILD_OBJS_DIR'} = $builder_dir;
 my $release_dir = $config->{architecture}->{$cmdline_arch}->{component}->{$cmdline_component}->{paths}->{release};
 mkpath($release_dir);
 $ENV{'RELEASE_DIR'} = $release_dir;
+
+# -------------------------------------------------------------------------
+# check our modules are up to date
+if($cmdline_submodules == 1)
+{
+  &print_info(&translate("updating submodules")."\n");
+  system("git submodule foreach git pull origin master");
+}
 
 # -------------------------------------------------------------------------
 # call into the makefile

@@ -25,7 +25,7 @@
 ; ----------------------------------------------------------------------------
 
 global start
-extern hardware_boot
+extern kernel_start
 
 ; reserve initial kernel stack space - 8K should be adequate for the bootstrap cpu
 BOOT_STACK_SIZE     equ 0x2000
@@ -189,7 +189,7 @@ goodbye_32bit:
     lgdt [rax]
 
     ; ignition sequence!
-    mov rax, hardware_boot
+    mov rax, kernel_start
     call rax
     
     ; fall through to force_dirty_power_off

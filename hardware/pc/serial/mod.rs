@@ -1,4 +1,4 @@
-/* hardware/pc/serial.rs
+/* hardware/pc/serial/mod.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -24,10 +24,10 @@
 /* provide a tidy interface to the underlying serial port hardware,
    for kernel debugging purposes */
   
-#[no_std];
-#[crate_type = "lib"];
-
-mod io;
+use core::mem::transmute;
+use core::slice::iter;
+use core::iter::Iterator;
+use core::option::{Some, Option, None};
 
 /* assume this is the default port for COM1 */
 static com1_io_base: u16 = 0x3f8;
@@ -70,5 +70,20 @@ pub fn write_byte(ch: u8)
   }
 
   io::write_byte(com1_io_base + data as u16, ch);
+}
+
+/* serial::write_string
+   Write the given string out to the serial port
+   => s = pointer to string
+*/
+pub fn write_string(s: &str)
+{
+  /* Rust stores strings with a length, so let's
+     do this properly rather than scan for a \0 */
+  let byte_stream: &[u8] = to_bytes(s);
+  for byte in core::slice::iter(byte_stream)
+  {
+    write_byte(*byte);
+  }
 }
 

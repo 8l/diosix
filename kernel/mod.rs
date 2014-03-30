@@ -1,4 +1,4 @@
-/* hardware/pc/io.rs
+/* kernel/mod.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,41 +21,19 @@
  * IN THE SOFTWARE.
  */
 
-/* provide x86 IO port access to Rust code, it's really a wrapper around 
-   assembly routines in locore.s */
+static kernel_banner: &'static str = "diosix (x86-64 pc) now running\n";
 
-#[no_std];
-#[crate_type = "lib"];
-
-extern "cdecl"
-{
-  fn hw_ioport_outb(port: u16, val: u8);
-  fn hw_ioport_readb(port: u16) -> u8;
-}
-
-/* io::write_byte
-   Write a byte to the given x86 IO port
-   => port = port number to access
-   => val = byte to write
+/* kernel_start
+   Called from start.s when the Rust environment has been set up. This function
+   gradually brings the system up until we can start running userspace
+   threads. This function shouldn't return unless something went wrong in the
+   kernel boot sequence.
+   <= Returns to trigger a low-level panic halt.
 */
-pub fn write_byte(port: u16, val: u8)
+#[no_mangle]
+pub fn kernel_start()
 {
-  unsafe
-  {
-    hw_ioport_outb(port, val);
-  }
-}
-
-/* io::read_byte
-   Read a byte from the given x86 IO port
-   => port = port number to access
-   <= byte read
-*/
-pub fn read_byte(port: u16) -> u8
-{
-  unsafe
-  {
-    return hw_ioport_readb(port) as u8;
-  }
+  serial::init(); /* prepare the serial port for debug output */
+  serial::write_string(kernel_banner);
 }
 

@@ -1,4 +1,4 @@
-/* hardware/pc/boot.rs
+/* hardware/pc/io/mod.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,32 +21,38 @@
  * IN THE SOFTWARE.
  */
 
-#[no_std];
-#[feature(asm)];
+/* provide x86 IO port access to Rust code, it's really a wrapper around 
+   assembly routines in locore.s */
 
-/* Rust runtime code from the kernel */
-#[path="../../kernel/lang.rs"]
-mod lang;
-
-/* port-specific libraries */
-mod serial;
-
-/* hardware_boot
-   Called from start.s when the Rust environment has been set up. This function
-   gradually brings the system up until we can start running userspace
-   threads. This function shouldn't return unless something went wrong in the
-   kernel boot sequence.
-   <= Returns to trigger a low-level panic halt.
-*/
-#[no_mangle]
-pub fn hardware_boot()
+extern "cdecl"
 {
-  let s: &str = "this is diosix!\n\0";
-  let mut index = 0;
-  while s[index] != '\0' as u8
+  fn hw_ioport_outb(port: u16, val: u8);
+  fn hw_ioport_readb(port: u16) -> u8;
+}
+
+/* io::write_byte
+   Write a byte to the given x86 IO port
+   => port = port number to access
+   => val = byte to write
+*/
+pub fn write_byte(port: u16, val: u8)
+{
+  unsafe
   {
-    serial::write_byte(s[index]);
-    index += 1;
+    hw_ioport_outb(port, val);
+  }
+}
+
+/* io::read_byte
+   Read a byte from the given x86 IO port
+   => port = port number to access
+   <= byte read
+*/
+pub fn read_byte(port: u16) -> u8
+{
+  unsafe
+  {
+    return hw_ioport_readb(port) as u8;
   }
 }
 

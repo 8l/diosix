@@ -4,6 +4,8 @@
 # Maintainer(s): Chris Williams (diodesign)
  
 # For x86-64 PC machines 
+#
+# requires rust-core: https://github.com/thestinger/rust-core/
 
 # Expects the build system to define the following:
 # BUILD_ARCH, BUILD_HARDWARE, BUILD_FEATURES, KERNEL_RELEASE_MAJOR,
@@ -26,9 +28,10 @@ WRITE 		= $(Q)echo
 
 .SUFFIXES: .s .c
 
-# define our clang, linker and nasm flags
-RUST_FLAGS	= --lib --out-dir $(BUILD_OBJS_DIR)
-CC_FLAGS	= -m64 \
+# define our rust, cc, linker and nasm flags
+RUST_CORE_FLAGS	= -O --out-dir $(BUILD_OBJS_DIR) -Z no-landing-pads
+RUST_FLAGS	= $(RUST_CORE_FLAGS) -L $(BUILD_OBJS_DIR) --emit bc
+CC_FLAGS	= -m64 -O3 \
 		  -ffreestanding -mcmodel=large \
 		  -mno-red-zone	-mno-mmx -mno-sse \
 		  -mno-sse2 -mno-sse3 -mno-3dnow
@@ -36,62 +39,64 @@ LINK_FLAGS	= -nodefaultlibs -T$(BUILD_LINKERFILE) \
 		  -z max-page-size=0x1000
 ASM_FLAGS	= -felf64
 
+# build the rust-core crate name
+RUST_CORE_SRC	= rust-core/core/lib.rs
+RUST_CORE_CRATE = $(shell $(BUILD_RUST) --crate-file-name $(RUST_CORE_SRC)) 
+
 # get our build executables all lined up
+RUST_CORE	= $(Q)$(BUILD_RUST) $(RUST_CORE_FLAGS)
 RUST		= $(Q)$(BUILD_RUST) $(RUST_FLAGS)
 CC		= $(Q)$(BUILD_CC) $(CC_FLAGS)
 LINK 		= $(Q)$(BUILD_LINKER) $(LINK_FLAGS)
 ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 
-# the actual components in the microkernel
-OBJS		= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
-		  $(BUILD_OBJS_DIR)/boot.o $(BUILD_OBJS_DIR)/io.o \
-		  $(BUILD_OBJS_DIR)/serial.o \
-		  $(BUILD_OBJS_DIR)/lang.o
+# the individual pre-link components in the microkernel
+OBJS		= $(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE) \
+                  $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
+		  $(BUILD_OBJS_DIR)/glue.bc $(BUILD_OBJS_DIR)/glue.o
+# the objects we'll be giving to the linker
+LINK_OBJS	= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
+		  $(BUILD_OBJS_DIR)/glue.o
 
 # targets
 all: kernel mkiso
 
 # standard cmd lines
-BUILD.rs	= $(RUST) -c $<
+BUILD.rs	= $(RUST) $<
 BUILD.c		= $(CC) -c $< -o $@
 BUILD.s		= $(ASM) $< -o $@
 
 # port-specific assembler rules
-$(BUILD_OBJS_DIR)/start.o:	$(BUILD_HARDWARE_SRC_DIR)/start.s
-				$(WRITE) '==> ASSEMBLE: $<'
-				$(BUILD.s)
+$(BUILD_OBJS_DIR)/start.o:		$(BUILD_HARDWARE_SRC_DIR)/asm/start.s
+					$(WRITE) '==> ASSEMBLE: $<'
+					$(BUILD.s)
 
-$(BUILD_OBJS_DIR)/locore.o:	$(BUILD_HARDWARE_SRC_DIR)/locore.s
-				$(WRITE) '==> ASSEMBLE: $<'
-				$(BUILD.s)
+$(BUILD_OBJS_DIR)/locore.o:		$(BUILD_HARDWARE_SRC_DIR)/asm/locore.s
+					$(WRITE) '==> ASSEMBLE: $<'
+					$(BUILD.s)
 
-# port-sopecific Rust source rules
-$(BUILD_OBJS_DIR)/boot.o:	$(BUILD_HARDWARE_SRC_DIR)/boot.rs
-				$(WRITE) '==> COMPILE: $<'
-				$(BUILD.rs)
+# freestanding runtime library for the kernel. this is compiled into
+# the build directory where the Rust source can find it
+$(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE):	$(RUST_CORE_SRC)
+					$(WRITE) '==> COMPILE: $<'
+					$(RUST_CORE) $<
 
-$(BUILD_OBJS_DIR)/io.o:		$(BUILD_HARDWARE_SRC_DIR)/io.rs
-				$(WRITE) '==> COMPILE: $<'
-				$(BUILD.rs)
+# Kernel Rust source rules: two-stage rustc-to-clang process
+$(BUILD_OBJS_DIR)/glue.bc:		$(BUILD_HARDWARE_SRC_DIR)/glue.rs
+					$(WRITE) '==> COMPILE: $<'
+					$(BUILD.rs)
 
-$(BUILD_OBJS_DIR)/serial.o:	$(BUILD_HARDWARE_SRC_DIR)/serial.rs
-				$(WRITE) '==> COMPILE: $<'
-				$(BUILD.rs)
+$(BUILD_OBJS_DIR)/glue.o:		$(BUILD_OBJS_DIR)/glue.bc
+					$(WRITE) '==> COMPILE: $<'
+					$(BUILD.c)
 
-# portable per-source rules
-$(BUILD_OBJS_DIR)/lang.o:	$(BUILD_KERNEL_SRC_DIR)/lang.rs
-				$(WRITE) '==> COMPILE: $<'
-				$(BUILD.rs)
-
-
-# explicit rules
 
 .EXPORT_ALL_VARIABLES: ;
 
 # link the kernel
 kernel: $(OBJS) $(BUILD_LINKERFILE) $(BUILD_MAKEFILE)
 	$(WRITE) '==> LINK: $<'
-	$(LINK) $(LINK_FLAGS) $(OBJS) -o $(BUILD_OBJS_DIR)/$@
+	$(LINK) $(LINK_FLAGS) $(LINK_OBJS) -o $(BUILD_OBJS_DIR)/$@
 
 # craft the boot ISO - XXX should this be here? (cw)
 mkiso:	$(BUILD_OBJS_DIR)/kernel

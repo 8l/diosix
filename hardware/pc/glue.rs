@@ -1,4 +1,4 @@
-/* kernel/lang.rs
+/* hardware/pc/glue.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,20 +21,24 @@
  * IN THE SOFTWARE.
  */
 
-/* ------------------------------------------------------------------
-    Provide support for Rust on bare-metal
-   --------------------------------------------------------------- */
+/* Bring all our code together and let Rust's slightly weird module system
+   resolve its imports and dependencies. 'There's not a problem I can't fix,
+   'cos I can do it in the mix' */
 
-#[crate_type = "lib"];
-#[no_std];
+#[crate_id = "diosix#0.1"]
+#[crate_type = "lib"]
 
-#[cold]
-#[no_mangle]
-#[lang="fail_bounds_check"]
-/* fail_bounds_check 
-   Called when a bounds checked failed, now we have to  deal with it */
-pub fn fail_bounds_check(_: *u8, _: uint, _: uint, _: uint)
-{
-  /* XXX attempt to recover gracefully */
-}
+#[no_std]
+#[no_core]
+
+/* pull in rust-core until rust's std library is freestanding */
+extern crate core;
+
+/* grab our port-specific code */
+pub mod serial;
+pub mod io;
+
+/* grab the portable source */
+#[path = "../../kernel/mod.rs"]
+pub mod kernel; /* defines kernel_start(), our entry point */
 

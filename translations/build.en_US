@@ -1,6 +1,6 @@
 # build text descriptions for en_US / en_UK (cwilliams, diosix.org, Feb 2014)
 
-syntax = syntax: build.pl --arch <arch> --hardware <hardware> --component <component>
+syntax = syntax: build.pl [--update-submodules] [--arch <arch>] --hardware <hardware> --component <component>
 banner = build environment
 no hardware selected = No hardware platform to target.
 hardware not recognized = Hardware plaftorm %%1 not recognized.
@@ -14,4 +14,5 @@ building component for default CPU and hardware = Building the %%1 for default a
 build config file not found = Can't find build configuration file %%1.
 build config file mismatch = Build configuration file %%1 does not define hardware platform %%2.
 building for = Building the %%1 for %%2 systems powered by %%3 processors.
+updating submodules = Getting the latest source code for submodules.
 
