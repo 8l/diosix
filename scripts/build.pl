@@ -231,7 +231,7 @@ $ENV{'RELEASE_DIR'} = $release_dir;
 if($cmdline_submodules == 1)
 {
   &print_info(&translate("updating submodules")."\n");
-  system("git submodule update --init");
+  system("git submodule update --init --recursive");
   system("git submodule foreach git pull origin master");
 }
 

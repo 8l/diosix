@@ -29,7 +29,7 @@
 
 #[no_std];
 
-/* pull in rust-core until rust's std library is freestanding */
+/* pull in the forked rust-core runtime until rust's std library is freestanding */
 extern crate core;
 
 /* grab our port-specific code */

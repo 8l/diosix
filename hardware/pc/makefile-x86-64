@@ -5,7 +5,7 @@
  
 # For x86-64 PC machines 
 #
-# requires rust-core: https://github.com/thestinger/rust-core/
+# requires rust-core: https://github.com/diodesign/rust-core
 
 # Expects the build system to define the following:
 # BUILD_ARCH, BUILD_HARDWARE, BUILD_FEATURES, KERNEL_RELEASE_MAJOR,
@@ -39,9 +39,9 @@ LINK_FLAGS	= -nodefaultlibs -T$(BUILD_LINKERFILE) \
 		  -z max-page-size=0x1000
 ASM_FLAGS	= -felf64 -g
 
-# build the rust-core crate name
-RUST_CORE_SRC	= rust-core/core/lib.rs
-RUST_CORE_CRATE = $(shell $(BUILD_RUST) --crate-file-name $(RUST_CORE_SRC)) 
+# build the forked rust-core runtime's crate name
+RUST_CORE_SRC	= runtime/core/lib.rs
+RUST_CORE_CRATE = $(shell $(BUILD_RUST) --crate-file-name $(RUST_CORE_SRC))
 
 # get our build executables all lined up
 RUST_CORE	= $(Q)$(BUILD_RUST) $(RUST_CORE_FLAGS)
