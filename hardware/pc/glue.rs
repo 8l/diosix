@@ -25,9 +25,8 @@
    resolve its imports and dependencies. 'There's not a problem I can't fix,
    'cos I can do it in the mix' */
 
-#[crate_type = "lib"];
-
-#[no_std];
+#![crate_type = "lib"]
+#![no_std]
 
 /* pull in the forked rust-core runtime until rust's std library is freestanding */
 extern crate core;
