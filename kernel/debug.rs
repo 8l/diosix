@@ -1,4 +1,4 @@
-/* kernel/mod.rs
+/* kernel/debug.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,27 +21,49 @@
  * IN THE SOFTWARE.
  */
 
-static kernel_banner: &'static str = "diosix (x86-64 pc) now running\n";
+use serial;
 
-pub mod debug;
+static ascii_numeral_base: u8  = 0x30;
+static ascii_question_mark: u8 = 0x3f;
+static ascii_lc_alpha_base: u8 = 0x61;
 
-/* ---- kernel entry point for Rust ----------------------------------------- */
-
-/* kernel_start
-   Called from start.s when the Rust environment has been set up. This function
-   gradually brings the system up until we can start running userspace
-   threads. This function shouldn't return unless something went wrong in the
-   kernel boot sequence.
-   <= Returns to trigger a low-level panic halt.
-*/
-#[no_mangle] /* don't mangle the function name, it's being called from asm */
-pub fn kernel_start()
+pub fn init()
 {
-  debug::init(); /* prepare the serial port for debug output */
-  debug::write_string(kernel_banner);
-  debug::write_hex(0x123456789abcdef0);
-  debug::write_string("\n");
-  debug::write_hex(0x4141414141414141);
-  debug::write_string("\n");
+  serial::init();
+}
+
+/* provide some routines to write to the serial port until Rust gets a
+   freestanding printf equivalent */
+
+pub fn write_string(s: &str)
+{
+  serial::write_string(s);
+}
+
+pub fn write_hex(mut value: u64)
+{
+  write_string("0x");
+
+  let mut index = 16;
+  while index > 0
+  {
+    let mut shift_value = value;
+    let mut shift_index = index - 1;
+
+    while shift_index > 0
+    {
+      shift_value = shift_value >> 4;
+      shift_index = shift_index - 1;
+    }
+
+    serial::write_byte(match (shift_value & 0xf) as u8
+    {
+       0 ..  9 => (shift_value & 0xf) as u8 + ascii_numeral_base,
+      10 .. 15 => (shift_value & 0xf) as u8 + ascii_lc_alpha_base - 10,
+             _ => ascii_question_mark
+    });
+
+    index = index - 1;
+  }
 }
 

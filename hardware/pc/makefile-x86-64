@@ -29,9 +29,9 @@ WRITE 		= $(Q)echo
 .SUFFIXES: .s .c
 
 # define our rust, cc, linker and nasm flags
-RUST_CORE_FLAGS	= -g -O --out-dir $(BUILD_OBJS_DIR) -Z no-landing-pads
+RUST_CORE_FLAGS	= -g --out-dir $(BUILD_OBJS_DIR) -Z no-landing-pads
 RUST_FLAGS	= $(RUST_CORE_FLAGS) -L $(BUILD_OBJS_DIR) --emit bc
-CC_FLAGS	= -m64 -O3 -g \
+CC_FLAGS	= -m64 -g \
 		  -ffreestanding -mcmodel=large \
 		  -mno-red-zone	-mno-mmx -mno-sse \
 		  -mno-sse2 -mno-sse3 -mno-3dnow
@@ -50,13 +50,19 @@ CC		= $(Q)$(BUILD_CC) $(CC_FLAGS)
 LINK 		= $(Q)$(BUILD_LINKER) $(LINK_FLAGS)
 ASM		= $(Q)$(BUILD_ASM) $(ASM_FLAGS)
 
-# the individual pre-link components in the microkernel
-OBJS		= $(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE) \
-                  $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
-		  $(BUILD_OBJS_DIR)/glue.bc $(BUILD_OBJS_DIR)/glue.o
 # the objects we'll be giving to the linker
 LINK_OBJS	= $(BUILD_OBJS_DIR)/start.o $(BUILD_OBJS_DIR)/locore.o \
 		  $(BUILD_OBJS_DIR)/glue.o
+
+# the individual pre-link components in the microkernel
+OBJS		= $(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE) $(LINK_OBJS) \
+		  $(BUILD_OBJS_DIR)/glue.bc
+
+# the Rust source code dependencies
+SRC_DEP		= $(BUILD_HARDWARE_SRC_DIR)/io/mod.rs \
+		  $(BUILD_HARDWARE_SRC_DIR)/serial/mod.rs \
+		  kernel/mod.rs \
+		  kernel/debug.rs
 
 # targets
 all: kernel mkiso
@@ -82,7 +88,7 @@ $(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE):	$(RUST_CORE_SRC)
 					$(RUST_CORE) $<
 
 # Kernel Rust source rules: two-stage rustc-to-clang process
-$(BUILD_OBJS_DIR)/glue.bc:		$(BUILD_HARDWARE_SRC_DIR)/glue.rs
+$(BUILD_OBJS_DIR)/glue.bc:		$(BUILD_HARDWARE_SRC_DIR)/glue.rs	$(SRC_DEP)
 					$(WRITE) '==> COMPILE (stage 1): $<'
 					$(BUILD.rs)
 
