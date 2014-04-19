@@ -23,24 +23,43 @@
 
 use serial;
 
-static ascii_numeral_base: u8  = 0x30;
-static ascii_question_mark: u8 = 0x3f;
-static ascii_lc_alpha_base: u8 = 0x61;
+/* describe UTF-8/ASCII-compatible characters */
+static ascii_numeral_base: u8  = 0x30; /* ASCII for '0' */
+static ascii_question_mark: u8 = 0x3f; /* ASCII for '?' */
+static ascii_lc_alpha_base: u8 = 0x61; /* ASCII for 'a' */
+
+/* provide some routines to send debugging information to the physical
+   world - the default is the machine's RS232-style serial port */
 
 pub fn init()
 {
   serial::init();
 }
 
-/* provide some routines to write to the serial port until Rust gets a
-   freestanding printf equivalent */
-
+/* write_string
+   Send a string to the defined debugging output channel.
+   => s = string to write out to the channel
+*/
 pub fn write_string(s: &str)
 {
+  /* we'll probably map debug's output to something else later,
+     or provide the option to, so keep things generic for now */
   serial::write_string(s);
 }
 
-pub fn write_hex(mut value: u64)
+/* write_newline
+   Send a newline, as you'd expect... */
+pub fn write_newline()
+{
+  write_string("\n");
+}
+
+/* write_hex
+   Write a 64-bit hex number in ASCII to the debug channel, including
+   the preceeding '0x' sequence.
+   => value = number to write out as an ASCII string
+*/
+pub fn write_hex(value: u64)
 {
   write_string("0x");
 

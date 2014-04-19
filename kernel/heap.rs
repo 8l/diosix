@@ -1,4 +1,4 @@
-/* kernel/mod.rs
+/* kernel/heap.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,36 +21,17 @@
  * IN THE SOFTWARE.
  */
 
-static kernel_banner: &'static str = "diosix (x86-64 pc) now running\n";
+/* kernel heap allocation routines */
 
-pub mod debug;
-pub mod heap;
-pub mod cast;
-
-fn owned_ptr(val: u64) -> ~u64
+#[lang = "exchange_malloc"]
+pub unsafe fn alloc(size: uint) -> *mut u8
 {
-  let ptr: ~u64 = ~val;
-  return ptr;
+  (0xffffffff80000000 + (64 * 1024 * 1024)) as *mut u8
 }
 
-/* ---- kernel entry point for Rust ----------------------------------------- */
-
-/* kernel_start
-   Called from start.s when the Rust environment has been set up. This function
-   gradually brings the system up until we can start running userspace
-   threads. This function shouldn't return unless something went wrong in the
-   kernel boot sequence.
-   <= Returns to trigger a low-level panic halt.
-*/
-#[no_mangle] /* don't mangle the function name, it's being called from asm */
-pub fn kernel_start()
+#[lang = "exchange_free"]
+pub unsafe fn free(ptr: *mut u8)
 {
-  debug::init(); /* prepare the serial port for debug output */
-  debug::write_string(kernel_banner);
 
-  let i: ~u64 = owned_ptr(10);
-  let x: u64 = cast::pointer_to_u64(i);
-  debug::write_hex(x);
-  debug::write_newline();
 }
 

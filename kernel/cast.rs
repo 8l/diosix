@@ -1,4 +1,4 @@
-/* kernel/mod.rs
+/* kernel/cast.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,36 +21,27 @@
  * IN THE SOFTWARE.
  */
 
-static kernel_banner: &'static str = "diosix (x86-64 pc) now running\n";
+/* cast types for the rust system. Oh wait, I'm supposed to use transmute?
+   OK, you go implement that for me in a freestanding environment and I'll
+   await your patch. BTW at time of writing, transmute() is not documented.
+*/
 
-pub mod debug;
-pub mod heap;
-pub mod cast;
-
-fn owned_ptr(val: u64) -> ~u64
+/* glue ourselves to the hardware layer - functions to be implemented */
+extern "cdecl"
 {
-  let ptr: ~u64 = ~val;
-  return ptr;
+  fn hw_pointer_to_u64(ptr: ~u64) -> u64;
 }
 
-/* ---- kernel entry point for Rust ----------------------------------------- */
-
-/* kernel_start
-   Called from start.s when the Rust environment has been set up. This function
-   gradually brings the system up until we can start running userspace
-   threads. This function shouldn't return unless something went wrong in the
-   kernel boot sequence.
-   <= Returns to trigger a low-level panic halt.
+/* pointer_to_u64
+   Turn a pointer into a 64-bit unsigned integer.
+   => ptr = pointer to convert
 */
-#[no_mangle] /* don't mangle the function name, it's being called from asm */
-pub fn kernel_start()
+#[inline]
+pub fn pointer_to_u64(ptr: ~u64) -> u64
 {
-  debug::init(); /* prepare the serial port for debug output */
-  debug::write_string(kernel_banner);
-
-  let i: ~u64 = owned_ptr(10);
-  let x: u64 = cast::pointer_to_u64(i);
-  debug::write_hex(x);
-  debug::write_newline();
+  unsafe
+  {
+    return hw_pointer_to_u64(ptr);
+  }
 }
 
