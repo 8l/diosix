@@ -62,7 +62,9 @@ OBJS		= $(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE) $(LINK_OBJS) \
 SRC_DEP		= $(BUILD_HARDWARE_SRC_DIR)/io/mod.rs \
 		  $(BUILD_HARDWARE_SRC_DIR)/serial/mod.rs \
 		  kernel/mod.rs \
-		  kernel/debug.rs
+		  kernel/debug.rs \
+		  kernel/heap.rs \
+		  kernel/cast.rs
 
 # targets
 all: kernel mkiso

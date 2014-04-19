@@ -55,11 +55,3 @@ hw_ioport_readb:
     in   al, dx
     ret
 
-global hw_pointer_to_u64
-; hw_pointer_to_u64 - convert a pointer to an unsigned 64-bit int
-; (I care not for rust's pointer obfuscation at this level.)
-; => rdi = pointer (64-bit)
-; <= rax = unsigned 64-bit value
-hw_pointer_to_u64:
-    mov  rax, rdi
-    ret

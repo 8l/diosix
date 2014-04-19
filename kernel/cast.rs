@@ -21,27 +21,40 @@
  * IN THE SOFTWARE.
  */
 
-/* cast types for the rust system. Oh wait, I'm supposed to use transmute?
-   OK, you go implement that for me in a freestanding environment and I'll
-   await your patch. BTW at time of writing, transmute() is not documented.
-*/
+/* allow the kernel to recast variables */
 
-/* glue ourselves to the hardware layer - functions to be implemented */
-extern "cdecl"
+/* grab the compiler's built-in functions */
+extern "rust-intrinsic"
 {
-  fn hw_pointer_to_u64(ptr: ~u64) -> u64;
+  pub fn forget<T>(_: T) -> ();
+  pub fn transmute<T,U>(e: T) -> U;
 }
 
-/* pointer_to_u64
-   Turn a pointer into a 64-bit unsigned integer.
-   => ptr = pointer to convert
+/* cast::kforget
+   Take ownership of a variable but do not trigger any cleanup or memory
+   management tasks – literally allow the system to forget about it.
+   => var = variable to discard
 */
 #[inline]
-pub fn pointer_to_u64(ptr: ~u64) -> u64
+pub fn kforget<T>(var: T)
 {
   unsafe
   {
-    return hw_pointer_to_u64(ptr);
+    forget(var);
+  }
+}
+
+/* cast::ktransmute::<L, G>
+   Convert a variable from one type to another.
+   => var = variable of type L to convert
+   <= returns variable as type G
+*/
+#[inline]
+pub fn ktransmute<L, G>(var: L) -> G
+{
+  unsafe
+  {
+    transmute(var)
   }
 }
 
