@@ -36,7 +36,7 @@ pub fn init()
   serial::init();
 }
 
-/* write_string
+/* debug::write_string
    Send a string to the defined debugging output channel.
    => s = string to write out to the channel
 */
@@ -47,14 +47,14 @@ pub fn write_string(s: &str)
   serial::write_string(s);
 }
 
-/* write_newline
+/* debug::write_newline
    Send a newline, as you'd expect... */
 pub fn write_newline()
 {
   write_string("\n");
 }
 
-/* write_hex
+/* debug::write_hex
    Write a 64-bit hex number in ASCII to the debug channel, including
    the preceeding '0x' sequence.
    => value = number to write out as an ASCII string
@@ -84,5 +84,17 @@ pub fn write_hex(value: u64)
 
     index = index - 1;
   }
+}
+
+/* debug::write_variable
+   Write a label and a value to the serial port, no \n character included
+   => label = string to describe the variable
+       value = value to write out
+*/
+pub fn write_variable(label: &str, value: u64)
+{
+  write_string(label);
+  write_string(" = ");
+  write_hex(value);
 }
 

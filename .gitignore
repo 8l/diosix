@@ -2,6 +2,8 @@
 # Specific ignores for diosix (cw, Dec 2013)
 #
 build/
+release/
+hardware/foundation/Foundation_v8
 
 # -------------------------------------------------------------------
 #

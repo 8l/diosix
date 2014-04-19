@@ -49,8 +49,10 @@ pub fn kernel_start()
   debug::write_string(kernel_banner);
 
   let i: ~u64 = owned_ptr(10);
-  let x: u64 = cast::pointer_to_u64(i);
-  debug::write_hex(x);
+  
+  debug::write_variable("i (value)", *i);
+  debug::write_newline();
+  debug::write_variable("i (pointer)", cast::pointer_to_u64(i));
   debug::write_newline();
 }
 
