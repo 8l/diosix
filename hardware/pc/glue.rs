@@ -34,6 +34,7 @@ extern crate core;
 /* grab our port-specific code */
 pub mod serial;
 pub mod io;
+pub mod physmem;
 
 /* grab the portable source */
 #[path = "../../kernel/mod.rs"]

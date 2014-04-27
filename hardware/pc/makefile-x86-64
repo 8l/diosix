@@ -32,12 +32,12 @@ WRITE 		= $(Q)echo
 RUST_CORE_FLAGS	= -g --out-dir $(BUILD_OBJS_DIR) -Z no-landing-pads
 RUST_FLAGS	= $(RUST_CORE_FLAGS) -L $(BUILD_OBJS_DIR) --emit bc
 CC_FLAGS	= -m64 -g \
-		  -ffreestanding -mcmodel=large \
+		  -ffreestanding -mcmodel=kernel \
 		  -mno-red-zone	-mno-mmx -mno-sse \
 		  -mno-sse2 -mno-sse3 -mno-3dnow
-LINK_FLAGS	= -nodefaultlibs -T$(BUILD_LINKERFILE) \
-		  -z max-page-size=0x1000
-ASM_FLAGS	= -felf64 -g
+LINK_FLAGS	= -nostdlib -T$(BUILD_LINKERFILE) \
+		  -z max-page-size=0x1000 --oformat elf64-x86-64
+ASM_FLAGS	= -felf64
 
 # build the forked rust-core runtime's crate name
 RUST_CORE_SRC	= runtime/core/lib.rs
@@ -61,6 +61,7 @@ OBJS		= $(BUILD_OBJS_DIR)/$(RUST_CORE_CRATE) $(LINK_OBJS) \
 # the Rust source code dependencies
 SRC_DEP		= $(BUILD_HARDWARE_SRC_DIR)/io/mod.rs \
 		  $(BUILD_HARDWARE_SRC_DIR)/serial/mod.rs \
+		  $(BUILD_HARDWARE_SRC_DIR)/physmem/mod.rs \
 		  kernel/mod.rs \
 		  kernel/debug.rs \
 		  kernel/heap.rs \

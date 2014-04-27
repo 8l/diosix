@@ -9,14 +9,16 @@ VIRT_BASE = 0xFFFFFFFF80000000;
 SECTIONS
 {
 	. = 0x100000;
+        __kernel_phys_start = .;
+        __kernel_boot_phys_start = .;
 
 	.boot :
 	{
-		*(.multibootheader)
+                *(.multibootheader)
 		*(.boot)
-		. = ALIGN(4096);
+                __kernel_boot_phys_end = .;
 	}
-
+        
 	. += VIRT_BASE;
 
 	.text ALIGN(0x1000) : AT(ADDR(.text) - VIRT_BASE)
@@ -35,15 +37,11 @@ SECTIONS
 	{
 		*(.rodata*)
 		*(.gnu.linkonce.r*)
-	}
-	
-	.bss ALIGN(0x1000) : AT(ADDR(.bss) - VIRT_BASE)
-	{
-		*(COMMON)
-		*(.bss)
-		*(.gnu.linkonce.b*)
-	}
-	
+
+                /* this is mandatory, marks the end of the kernel's image in phys mem */
+                __kernel_phys_end = . - VIRT_BASE;
+	}	
+
 	/DISCARD/ :
 	{
 		*(.comment)

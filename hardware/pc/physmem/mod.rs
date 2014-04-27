@@ -1,4 +1,4 @@
-/* kernel/heap.rs
+/* hardware/pc/physmem/mod.rs
  *
  * Copyright (c) 2014, Chris Williams (diosix.org)
  *
@@ -21,36 +21,51 @@
  * IN THE SOFTWARE.
  */
 
-use physmem;
-pub mod debug;
+/* provide an interface between the physical memory and the kernel,
+   and related functions */
 
-/* kernel heap allocation routines */
-
-#[lang = "exchange_malloc"]
-pub unsafe fn alloc(size: uint) -> *mut u8
+extern "cdecl"
 {
-  let (kstart, ksize) = physmem::describe_kernel();
-  let (kbstart, kbsize) = physmem::describe_kernel_boot();
-
-
-  debug::write_variable("start of kernel", kstart as u64);
-  debug::write_newline();
-  debug::write_variable("size of kernel", ksize);
-  debug::write_newline();
-  debug::write_newline();
+  fn hw_get_kernel_phys_start() -> *u64;
+  fn hw_get_kernel_size() -> u64;
   
-  debug::write_variable("start of kernel boot", kbstart as u64);
-  debug::write_newline();
-  debug::write_variable("size of kernel boot", kbsize);
-  debug::write_newline();
-  debug::write_newline();
-
-  (0xffffffff80000000 + (64 * 1024 * 1024)) as *mut u8
+  fn hw_get_kernel_boot_phys_start() -> *u64;
+  fn hw_get_kernel_boot_size() -> u64;
 }
 
-#[lang = "exchange_free"]
-pub unsafe fn free(ptr: *mut u8)
+/* physmem::describe_kernel
+   <= return physical RAM start address of the loaded kernel
+      and size of loaded kernel in bytes
+*/
+pub fn describe_kernel() -> (*u64, u64) 
 {
+  (
+    unsafe
+    {
+      hw_get_kernel_phys_start()
+    },
+    unsafe
+    {
+      hw_get_kernel_size()
+    }
+  )
+}
 
+/* physmem::describe_kernel_boot
+   <= return physical RAM start address of the kernel's boot section
+      and size of the boot section in bytes      
+*/
+pub fn describe_kernel_boot() -> (*u64, u64)
+{
+  (
+    unsafe
+    {
+      hw_get_kernel_boot_phys_start()
+    },
+    unsafe
+    {
+      hw_get_kernel_boot_size()
+    }
+  )
 }
 
